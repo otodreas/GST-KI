@@ -1,0 +1,70 @@
+import warnings
+from pathlib import Path
+
+import polars as pl
+from pydantic import BaseModel, ConfigDict
+
+from gst_ki.structs import ensembl_to_gene, gene_to_ensembl, gnomad_schema_overrides
+
+
+class Dataset(BaseModel):
+    ensemblId: str
+    canonicalTranscript: str
+    chromosomes: list[int]
+    filePath: Path
+    dataMatrix: pl.dataframe.frame.DataFrame
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+def load_gnomad(
+    filename: str | Path,
+    ensembl_to_gene_lookup: dict[str, str] = ensembl_to_gene,
+    gene_to_ensembl_lookup: dict[str, dict[str, str]] = gene_to_ensembl,
+) -> dict[str, Dataset]:
+    filename = Path(filename)
+
+    if not filename.is_file():
+        raise FileNotFoundError(f"{filename} not found")
+
+    # Read the first line to check for commas
+    with open(filename, "r") as head:
+        head = head.readline()
+
+    if filename.suffix != ".csv" or "," not in head:
+        raise TypeError(f"{filename} is not a CSV file")
+
+    ensembl_id_short = filename.stem.split("_")[2]
+
+    if ensembl_id_short == [filename.stem]:
+        raise TypeError(f"Failed to extract Ensembl ID from filename {filename}")
+
+    # Lookups
+    try:
+        gene = ensembl_to_gene_lookup[ensembl_id_short]
+    except KeyError:
+        print(f"Ensembl ID {ensembl_id_short} not found in lookup table")
+
+    try:
+        ensembl_id_long = gene_to_ensembl_lookup[gene]["geneId"]
+        canonical_transcript = gene_to_ensembl_lookup[gene]["canonicalTranscript"]
+    except KeyError:
+        print(
+            f"Gene {gene} not present in lookup table or missing geneID and canonicalTranscript keys"
+        )
+
+    df = pl.read_csv(filename, schema_overrides=gnomad_schema_overrides)
+    df = df.with_columns(Gene=pl.lit(gene, dtype=pl.String))
+
+    if df["Chromosome"].n_unique() > 1:
+        warnings.warn(f"{filename} contains variants from multiple chromosomes")
+
+    return {
+        gene: Dataset(
+            ensemblId=ensembl_id_long,
+            canonicalTranscript=canonical_transcript,
+            chromosomes=list(df["Chromosome"].unique()),
+            filePath=filename.resolve(),
+            dataMatrix=df,
+        )
+    }

@@ -1,0 +1,9 @@
+repos:
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.17.5  # Update if switching to a newer release of Ruff
+  hooks:
+    - id: ruff-check
+      types_or: [ python, pyi ]  # Jupyter notebooks do not get checked
+      args: [ --fix ]
+    - id: ruff-format
+      types_or: [ python, pyi ]  # Jupyter notebooks do not get formatted

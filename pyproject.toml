@@ -1,0 +1,17 @@
+[project]
+name = "gst-ki"
+version = "0.1.0"
+description = "Analytical code for KI GST project. Master's thesis, Lund University MSc in Bioinformatics"
+readme = "README.md"
+authors = [
+    { name = "Oliver Todreas", email = "otodreas@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = []
+
+[project.scripts]
+gst-ki = "gst_ki:main"
+
+[build-system]
+requires = ["uv_build>=0.11.0,<0.12.0"]
+build-backend = "uv_build"

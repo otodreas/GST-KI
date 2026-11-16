@@ -4,7 +4,7 @@ from pathlib import Path
 import polars as pl
 from pydantic import BaseModel, ConfigDict
 
-from gst_ki import structs
+from otodreas_gst_ki import structs
 
 
 class GnomadDataset(BaseModel):

@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from gst_ki import loaders
+from otodreas_gst_ki import loaders
 
 
 class TestGnomad:

@@ -1,10 +1,18 @@
 # GST-KI
 
-Analytical code for KI GST project. Master's thesis, Lund University MSc in Bioinformatics
+Analytical code for KI GST project. Master's thesis, Lund University MSc in Bioinformatics.
 
 ## Reproducibility
 
-Currently, the repo is a Python-only uv project. To reproduce:
+### Install required software
+
+Currently, the repo is a Python-only uv project. Required software is listed below:
+
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
+
+> Note: the appropriate Python version will be installed by uv if it's not already present when you initialize the environment.
+
+### Build the environment
 
 1. [Install uv](https://docs.astral.sh/uv/getting-started/installation/)
 2. Fork the repo on GitHub
@@ -18,5 +26,12 @@ cd GST-KI
 ```sh
 uv sync --locked
 ```
+### Run tests
 
-> Note: the appropriate Python version will be installed by uv if it's not already present
+If proposing changes, run the test suite:
+
+```sh
+uv run pytest
+```
+
+Add at least one test for every unit added.

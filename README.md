@@ -2,7 +2,15 @@
 
 Analytical code for KI GST project. Master's thesis, Lund University MSc in Bioinformatics.
 
-## Reproducibility
+# Reproducibility
+
+## Reproduce results
+
+I will provide a Jupyter Notebook via Colab (not published yet). It will pip install this package and let you run my analyses quickly.
+
+## Audit code
+
+If you prefer to audit the code, work on this repo as a developer.
 
 ### Install required software
 

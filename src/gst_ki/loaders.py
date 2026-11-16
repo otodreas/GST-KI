@@ -14,11 +14,15 @@ class GnomadDataset(BaseModel):
     chromosomes: list[int]
     nVars: int
     nVarsInCanonicalTranscript: int
-    pctVarsInCanonicalTranscript: float
     filePath: Path
     dataMatrix: pl.DataFrame
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    def summarize(self):
+        print(
+            f"{self.gene}: {self.nVarsInCanonicalTranscript} variants are in the canonical transcript {self.canonicalTranscript} ({round(self.nVarsInCanonicalTranscript / self.nVars * 100, 1)}%)"
+        )
 
 
 def load_gnomad(
@@ -61,15 +65,14 @@ def load_gnomad(
     df = pl.read_csv(filename, schema_overrides=gnomad_schema_overrides)
     df = df.with_columns(Gene=pl.lit(gene, dtype=pl.String))
 
-    if df["Chromosome"].n_unique() > 1:
+    if df.get_column("Chromosome").n_unique() > 1:
         warnings.warn(f"{filename} contains variants from multiple chromosomes")
 
     n_vars = df.shape[0]
     df = df.with_columns(
         CanonicalTranscript=pl.col("Transcript") == canonical_transcript
     )
-    n_vars_in_canonical_transcript = df.select("CanonicalTranscript").sum()[0, 0]
-    pct_vars_in_canonical_transcript = n_vars_in_canonical_transcript / n_vars
+    n_vars_in_canonical_transcript = df.get_column("CanonicalTranscript").sum()
 
     return GnomadDataset(
         gene=gene,
@@ -78,7 +81,6 @@ def load_gnomad(
         chromosomes=list(df["Chromosome"].unique()),
         nVars=n_vars,
         nVarsInCanonicalTranscript=n_vars_in_canonical_transcript,
-        pctVarsInCanonicalTranscript=pct_vars_in_canonical_transcript,
         filePath=filename.resolve(),
         dataMatrix=df,
     )

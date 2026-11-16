@@ -1,6 +1,5 @@
 import polars as pl
 
-# These columns can have unclear types a long way down
 gnomad_schema = {
     "gnomAD ID": pl.String,
     "Chromosome": pl.Int64,

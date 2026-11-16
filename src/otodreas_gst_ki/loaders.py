@@ -108,7 +108,7 @@ def find_shared_variants(datasets: list[GnomadDataset]) -> pl.DataFrame:
         .filter(pl.col("nGenes") > 1)
     )
 
-    # if shared.shape[0] > 0:
-    #     warnings.warn("Overlapping variants found")
+    if shared.shape[0] > 0:
+        warnings.warn("Overlapping variants found")
 
     return shared

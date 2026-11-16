@@ -78,5 +78,7 @@ class TestGnomad:
             ),
         ]
 
-        assert loaders.find_shared_variants(datasets_shared).shape == (9, 2)
+        with pytest.warns(UserWarning):
+            shared_vars_frame = loaders.find_shared_variants(datasets_shared)
+        assert shared_vars_frame.shape == (9, 2)
         assert loaders.find_shared_variants(datasets_not_shared).shape == (0, 2)

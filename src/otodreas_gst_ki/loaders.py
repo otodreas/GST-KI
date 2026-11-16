@@ -29,7 +29,7 @@ def load_gnomad(
     filename: str | Path,
     ensembl_to_gene_lookup: dict[str, str] = structs.ensembl_to_gene,
     gene_to_ensembl_lookup: dict[str, dict[str, str]] = structs.gene_to_ensembl,
-    gnomad_schema_overrides: dict[str, pl.Any] = structs.gnomad_schema_overrides,
+    gnomad_schema: dict[str, pl.Any] = structs.gnomad_schema,
 ) -> GnomadDataset:
     filename = Path(filename)
 
@@ -62,7 +62,7 @@ def load_gnomad(
             f"Gene {gene} not present in lookup table or missing geneID and canonicalTranscript keys"
         )
 
-    df = pl.read_csv(filename, schema_overrides=gnomad_schema_overrides)
+    df = pl.read_csv(filename, schema_overrides=gnomad_schema)
     df = df.with_columns(Gene=pl.lit(gene, dtype=pl.String))
 
     if df.get_column("Chromosome").n_unique() > 1:
@@ -92,3 +92,23 @@ def concat_gnomad(datasets: list[GnomadDataset]) -> pl.DataFrame:
         raise ValueError("Pass a list of at least 2 datasets to concatenate")
 
     return pl.concat([d.dataMatrix for d in datasets])
+
+
+def find_shared_variants(datasets: list[GnomadDataset]) -> pl.DataFrame:
+
+    combined = concat_gnomad(datasets).with_columns(
+        VariantId=pl.concat_str(
+            ["Chromosome", "Position", "Reference", "Alternate"], separator="-"
+        )
+    )
+
+    shared = (
+        combined.group_by("VariantId")
+        .agg(pl.col("Gene").n_unique().alias("nGenes"))
+        .filter(pl.col("nGenes") > 1)
+    )
+
+    # if shared.shape[0] > 0:
+    #     warnings.warn("Overlapping variants found")
+
+    return shared

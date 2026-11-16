@@ -4,24 +4,26 @@ from pathlib import Path
 import polars as pl
 from pydantic import BaseModel, ConfigDict
 
-from gst_ki.structs import ensembl_to_gene, gene_to_ensembl, gnomad_schema_overrides
+from gst_ki import structs
 
 
 class Dataset(BaseModel):
+    gene: str
     ensemblId: str
     canonicalTranscript: str
     chromosomes: list[int]
     filePath: Path
-    dataMatrix: pl.dataframe.frame.DataFrame
+    dataMatrix: pl.DataFrame
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 def load_gnomad(
     filename: str | Path,
-    ensembl_to_gene_lookup: dict[str, str] = ensembl_to_gene,
-    gene_to_ensembl_lookup: dict[str, dict[str, str]] = gene_to_ensembl,
-) -> dict[str, Dataset]:
+    ensembl_to_gene_lookup: dict[str, str] = structs.ensembl_to_gene,
+    gene_to_ensembl_lookup: dict[str, dict[str, str]] = structs.gene_to_ensembl,
+    gnomad_schema_overrides: dict[str, pl.Any] = structs.gnomad_schema_overrides,
+) -> Dataset:
     filename = Path(filename)
 
     if not filename.is_file():
@@ -59,12 +61,19 @@ def load_gnomad(
     if df["Chromosome"].n_unique() > 1:
         warnings.warn(f"{filename} contains variants from multiple chromosomes")
 
-    return {
-        gene: Dataset(
-            ensemblId=ensembl_id_long,
-            canonicalTranscript=canonical_transcript,
-            chromosomes=list(df["Chromosome"].unique()),
-            filePath=filename.resolve(),
-            dataMatrix=df,
-        )
-    }
+    return Dataset(
+        gene=gene,
+        ensemblId=ensembl_id_long,
+        canonicalTranscript=canonical_transcript,
+        chromosomes=list(df["Chromosome"].unique()),
+        filePath=filename.resolve(),
+        dataMatrix=df,
+    )
+
+
+def concat_gnomad(datasets: list[Dataset]) -> pl.DataFrame:
+
+    if len(datasets) < 2:
+        raise ValueError("Pass a list of at least 2 datasets to concatenate")
+
+    return pl.concat([d.dataMatrix for d in datasets])

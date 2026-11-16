@@ -18,13 +18,14 @@ Currently, the repo is a Python-only uv project. Required software is listed bel
 
 - [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
-> Note: the appropriate Python version will be installed by uv if it's not already present when you initialize the environment.
+> **Note:** the appropriate Python version will be installed by uv if it's not already present when you initialize the environment.
 
 ### Build the environment
 
 1. Fork the repo on GitHub
 2. Clone the repo
 ```sh
+# Using SSH
 cd ~
 git clone git@github.com:<YOUR_GITHUB_USERNAME>/GST-KI.git
 cd GST-KI

@@ -27,7 +27,7 @@ class TestGnomad:
             "tests/gnomAD_v4.1.2_ENSG00000133433_2026_11_12_16_00_24_short.csv"
         )
         assert dataset.gene == "GSTT2B"
-        assert dataset.dataMatrix.shape == (9, 73)
+        assert dataset.dataMatrix.shape == (9, 74)
         assert dataset.ensemblId == "ENSG00000133433.11"
         assert dataset.canonicalTranscript == "ENST00000290765.9"
         assert dataset.chromosomes == [22]
@@ -54,4 +54,4 @@ class TestGnomad:
                 "tests/gnomAD_v4.1.2_ENSG00000133433_2026_11_12_16_00_24_short.csv"
             ),
         ]
-        assert loaders.concat_gnomad(datasets).shape == (18, 73)
+        assert loaders.concat_gnomad(datasets).shape == (18, 74)

@@ -7,11 +7,14 @@ from pydantic import BaseModel, ConfigDict
 from gst_ki import structs
 
 
-class Dataset(BaseModel):
+class GnomadDataset(BaseModel):
     gene: str
     ensemblId: str
     canonicalTranscript: str
     chromosomes: list[int]
+    nVars: int
+    nVarsInCanonicalTranscript: int
+    pctVarsInCanonicalTranscript: float
     filePath: Path
     dataMatrix: pl.DataFrame
 
@@ -23,7 +26,7 @@ def load_gnomad(
     ensembl_to_gene_lookup: dict[str, str] = structs.ensembl_to_gene,
     gene_to_ensembl_lookup: dict[str, dict[str, str]] = structs.gene_to_ensembl,
     gnomad_schema_overrides: dict[str, pl.Any] = structs.gnomad_schema_overrides,
-) -> Dataset:
+) -> GnomadDataset:
     filename = Path(filename)
 
     if not filename.is_file():
@@ -61,17 +64,27 @@ def load_gnomad(
     if df["Chromosome"].n_unique() > 1:
         warnings.warn(f"{filename} contains variants from multiple chromosomes")
 
-    return Dataset(
+    n_vars = df.shape[0]
+    df = df.with_columns(
+        CanonicalTranscript=pl.col("Transcript") == canonical_transcript
+    )
+    n_vars_in_canonical_transcript = df.select("CanonicalTranscript").sum()[0, 0]
+    pct_vars_in_canonical_transcript = n_vars_in_canonical_transcript / n_vars
+
+    return GnomadDataset(
         gene=gene,
         ensemblId=ensembl_id_long,
         canonicalTranscript=canonical_transcript,
         chromosomes=list(df["Chromosome"].unique()),
+        nVars=n_vars,
+        nVarsInCanonicalTranscript=n_vars_in_canonical_transcript,
+        pctVarsInCanonicalTranscript=pct_vars_in_canonical_transcript,
         filePath=filename.resolve(),
         dataMatrix=df,
     )
 
 
-def concat_gnomad(datasets: list[Dataset]) -> pl.DataFrame:
+def concat_gnomad(datasets: list[GnomadDataset]) -> pl.DataFrame:
 
     if len(datasets) < 2:
         raise ValueError("Pass a list of at least 2 datasets to concatenate")

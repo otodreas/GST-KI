@@ -28,6 +28,7 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "jupyterlab>=4.6.6",
+    "nbstripout>=0.9.1",
     "notebook>=7.6.5",
     "pre-commit>=4.7.0",
     "pytest>=9.2.0",

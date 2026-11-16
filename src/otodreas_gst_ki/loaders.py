@@ -78,7 +78,7 @@ def load_gnomad(
         gene=gene,
         ensemblId=ensembl_id_long,
         canonicalTranscript=canonical_transcript,
-        chromosomes=list(df["Chromosome"].unique()),
+        chromosomes=list(df.get_column("Chromosome").unique()),
         nVars=n_vars,
         nVarsInCanonicalTranscript=n_vars_in_canonical_transcript,
         filePath=filename.resolve(),

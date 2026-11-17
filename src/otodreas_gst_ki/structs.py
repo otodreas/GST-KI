@@ -97,6 +97,50 @@ gene_to_ensembl = {
         "geneId": "ENSG00000133433.11",
         "canonicalTranscript": "ENST00000290765.9",
     },
+    "GSTA1": {
+        "geneId": "ENSG00000243955.6",
+        "canonicalTranscript": "ENST00000334575.6",
+    },
+    "GSTA3": {
+        "geneId": "ENSG00000174156.15",
+        "canonicalTranscript": "ENST00000211122.4",
+    },
+    "GSTA4": {
+        "geneId": "ENSG00000170899.11",
+        "canonicalTranscript": "ENST00000370963.9",
+    },
+    "GSTA5": {
+        "geneId": "ENSG00000182793.12",
+        "canonicalTranscript": "ENST00000370989.6",
+    },
+    "GSTK1": {
+        "geneId": "ENSG00000197448.14",
+        "canonicalTranscript": "ENST00000358406.10",
+    },
+    "GSTM2": {
+        "geneId": "ENSG00000213366.13",
+        "canonicalTranscript": "ENST00000241337.9",
+    },
+    "GSTM4": {
+        "geneId": "ENSG00000168765.18",
+        "canonicalTranscript": "ENST00000369836.9",
+    },
+    "GSTO2": {
+        "geneId": "ENSG00000065621.15",
+        "canonicalTranscript": "ENST00000338595.7",
+    },
+    "GSTP1": {
+        "geneId": "ENSG00000084207.18",
+        "canonicalTranscript": "ENST00000398606.10",
+    },
+    "GSTT2": {
+        "geneId": "ENSG00000099984.11",
+        "canonicalTranscript": "ENST00000621118.4",
+    },
+    "GSTZ1": {
+        "geneId": "ENSG00000100577.19",
+        "canonicalTranscript": "ENST00000216465.10",
+    },
 }
 
 # Reverse lookup of gene names from short Ensembl gene IDs
@@ -106,4 +150,15 @@ ensembl_to_gene = {
     "ENSG00000134201": "GSTM5",
     "ENSG00000148834": "GSTO1",
     "ENSG00000133433": "GSTT2B",
+    "ENSG00000243955": "GSTA1",
+    "ENSG00000174156": "GSTA3",
+    "ENSG00000170899": "GSTA4",
+    "ENSG00000182793": "GSTA5",
+    "ENSG00000197448": "GSTK1",
+    "ENSG00000213366": "GSTM2",
+    "ENSG00000168765": "GSTM4",
+    "ENSG00000065621": "GSTO2",
+    "ENSG00000084207": "GSTP1",
+    "ENSG00000099984": "GSTT2",
+    "ENSG00000100577": "GSTZ1",
 }

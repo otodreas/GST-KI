@@ -25,12 +25,7 @@ class GnomadDataset(BaseModel):
         )
 
 
-def load_gnomad(
-    filename: str | Path,
-    ensembl_to_gene_lookup: dict[str, str] = structs.ensembl_to_gene,
-    gene_to_ensembl_lookup: dict[str, dict[str, str]] = structs.gene_to_ensembl,
-    gnomad_schema: dict[str, pl.Any] = structs.gnomad_schema,
-) -> GnomadDataset:
+def _load_gnomady_csv(filename: str | Path) -> tuple[str, Path]:
     filename = Path(filename)
 
     if not filename.is_file():
@@ -48,6 +43,18 @@ def load_gnomad(
     if ensembl_id_short == [filename.stem]:
         raise TypeError(f"Failed to extract Ensembl ID from filename {filename}")
 
+    return (ensembl_id_short, filename)
+
+
+def load_gnomad(
+    filename: str | Path,
+    ensembl_to_gene_lookup: dict[str, str] = structs.ensembl_to_gene,
+    gene_to_ensembl_lookup: dict[str, dict[str, str]] = structs.gene_to_ensembl,
+    gnomad_schema: dict[str, pl.Any] = structs.gnomad_schema,
+) -> GnomadDataset:
+
+    ensembl_id_short, filename = _load_gnomady_csv(filename)
+
     # Lookups
     try:
         gene = ensembl_to_gene_lookup[ensembl_id_short]
@@ -60,6 +67,11 @@ def load_gnomad(
     except KeyError:
         print(
             f"Gene {gene} not present in lookup table or missing geneID and canonicalTranscript keys"
+        )
+
+    if ensembl_id_short != ensembl_id_long.split(".")[0]:
+        raise ValueError(
+            f"Provenance failure for {gene}: {ensembl_id_short} not like {ensembl_id_long}"
         )
 
     df = pl.read_csv(filename, schema_overrides=gnomad_schema)

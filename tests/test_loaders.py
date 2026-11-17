@@ -82,3 +82,28 @@ class TestGnomad:
             shared_vars_frame = loaders.find_shared_variants(datasets_shared)
         assert shared_vars_frame.shape == (9, 2)
         assert loaders.find_shared_variants(datasets_not_shared).shape == (0, 2)
+
+    def test_provenance_check(self):
+        bad_table = {
+            "ENSG00000134184": "GSTM1",
+            "ENSG00000134202": "GSTM3",
+            "ENSG00000134201": "GSTM5",
+            "ENSG00000148834": "GSTO1",
+            "ENSG00000133432": "GSTT2B",
+            "ENSG00000243955": "GSTA1",
+            "ENSG00000174156": "GSTA3",
+            "ENSG00000170899": "GSTA4",
+            "ENSG00000182793": "GSTA5",
+            "ENSG00000197448": "GSTK1",
+            "ENSG00000213366": "GSTM2",
+            "ENSG00000168765": "GSTM4",
+            "ENSG00000065621": "GSTO2",
+            "ENSG00000084207": "GSTP1",
+            "ENSG00000099984": "GSTT2",
+            "ENSG00000100577": "GSTZ1",
+        }
+        with pytest.raises(ValueError):
+            loaders.load_gnomad(
+                "tests/data/gnomad/gnomAD_v4.1.2_ENSG00000133432_2026_11_12_16_00_24_short_provenance_mismatch.csv",
+                ensembl_to_gene_lookup=bad_table,
+            )

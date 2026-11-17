@@ -6,7 +6,7 @@ Analytical code for KI GST project. Master's thesis, Lund University MSc in Bioi
 
 ## Reproduce results
 
-Currently, the only way to reproduce the results is to install the project and run the notebooks, which is outlined in the [Audit code](audit-code) section.
+Currently, the only way to reproduce the results is to install the project and run the notebooks, which is outlined in the **Audit code** section below.
 
 I will provide a Jupyter Notebook via Colab (not published yet). It will pip install this package and let you run my analyses quickly.
 

@@ -2,6 +2,10 @@
 
 Analytical code for KI GST project. Master's thesis, Lund University MSc in Bioinformatics.
 
+# Repo structure
+
+This repo contains the Python library [otodreas-gst-ki](src/otodreas_gst_ki/), [data](data), and [tests](tests). The notebook [main.ipynb](main.ipynb) runs the main analysis using the functions surfaced in the library.
+
 # Reproducibility
 
 ## Reproduce results

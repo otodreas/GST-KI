@@ -6,6 +6,8 @@ Analytical code for KI GST project. Master's thesis, Lund University MSc in Bioi
 
 ## Reproduce results
 
+Currently, the only way to reproduce the results is to install the project and run the notebooks, which is outlined in the [Audit code](audit-code) section.
+
 I will provide a Jupyter Notebook via Colab (not published yet). It will pip install this package and let you run my analyses quickly.
 
 ## Audit code
@@ -14,7 +16,7 @@ If you prefer to audit the code, work on this repo as a developer.
 
 ### Install required software
 
-Currently, the repo is a Python-only uv project. Required software and download links are listed below:
+The repo is a Python-only uv project. Required software and download links are listed below:
 
 - [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
@@ -33,6 +35,17 @@ cd GST-KI
 ```sh
 uv sync --locked
 ```
+
+### Run notebooks
+
+To edit and run Jupyter notebooks, either open them in your IDE or run
+
+```sh
+uv run jupyter lab
+```
+
+And open your notebook of choice in the Jupyter frontend.
+
 ### Run tests
 
 If proposing changes, run the test suite:

@@ -101,6 +101,14 @@ def load_gnomad(
         )
 
     df = df.with_columns(Gene=pl.lit(gene, dtype=pl.String))
+    df = df.with_columns(
+        pl.when(pl.col("VEP Annotation") == "intron_variant")
+        .then(False)
+        .otherwise(True)
+        .alias("Exonic")
+    )
+
+    # TODO: check for missed vep annotation values containing "intron" if df.select(["VEP Annotation", "Exonic"])
 
     if df.get_column("Chromosome").n_unique() > 1:
         warnings.warn(f"{filename} contains variants from multiple chromosomes")

@@ -27,7 +27,7 @@ class TestGnomad:
             "tests/data/gnomad/gnomAD_v4.1.2_ENSG00000133433_2026_11_12_16_00_24_short.csv"
         )
         assert dataset.gene == "GSTT2B"
-        assert dataset.dataMatrix.shape == (9, 74)
+        assert dataset.dataMatrix.shape == (9, 75)
         assert dataset.ensemblId == "ENSG00000133433.11"
         assert dataset.canonicalTranscript == "ENST00000290765.9"
         assert dataset.chromosomes == [22]
@@ -51,7 +51,7 @@ class TestGnomad:
                 "tests/data/gnomad/gnomAD_v4.1.2_ENSG00000133433_2026_11_12_16_00_24_short.csv"
             ),
         ]
-        assert loaders.concat_gnomad(datasets).shape == (18, 74)
+        assert loaders.concat_gnomad(datasets).shape == (18, 75)
 
     def test_shared_variants(self):
         # Since gene names are parsed from the file name, a test file for ENSG00000133433 gets renamed to ENSG00000148834.
@@ -112,3 +112,5 @@ class TestGnomad:
             ).gnomadVersion
             == "v4.1.2"
         )
+
+    # TODO: MAKE test for todo in loaders def test_alert_missing_introns(self):

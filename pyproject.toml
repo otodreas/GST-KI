@@ -12,7 +12,9 @@ license-files = ["LICEN[CS]E*"]
 dependencies = [
     "matplotlib>=3.11.2",
     "polars>=2.1.0",
+    "pyarrow>=26.0.1",
     "pydantic>=2.14.3",
+    "seaborn>=0.13.2",
 ]
 
 [project.urls]

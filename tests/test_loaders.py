@@ -31,11 +31,8 @@ class TestGnomad:
         assert dataset.ensemblId == "ENSG00000133433.11"
         assert dataset.canonicalTranscript == "ENST00000290765.9"
         assert dataset.chromosomes == [22]
-        assert (
-            dataset.filePath
-            == Path(
-                "tests/data/gnomad/gnomAD_v4.1.2_ENSG00000133433_2026_11_12_16_00_24_short.csv"
-            ).resolve()
+        assert dataset.filePath == Path(
+            "tests/data/gnomad/gnomAD_v4.1.2_ENSG00000133433_2026_11_12_16_00_24_short.csv"
         )
 
     def test_gnomad_concat_too_few_datasets(self):

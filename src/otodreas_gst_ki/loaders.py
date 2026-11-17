@@ -47,6 +47,9 @@ def load_gnomad(
     gene_to_ensembl_lookup: dict[str, dict[str, str]] = structs.gene_to_ensembl,
     gnomad_schema: dict[str, pl.Any] = structs.gnomad_schema,
 ) -> GnomadDataset:
+    """Load a gnomAD CSV. Check for provenance between fields derived from hand-written lookup tables
+    Returns a GnomadDataset object
+    """
 
     filename = _check_csv(filename)
 
@@ -97,7 +100,7 @@ def load_gnomad(
         chromosomes=list(df.get_column("Chromosome").unique()),
         nVars=n_vars,
         nVarsInCanonicalTranscript=n_vars_in_canonical_transcript,
-        filePath=filename.resolve(),
+        filePath=filename,
         dataMatrix=df,
     )
 

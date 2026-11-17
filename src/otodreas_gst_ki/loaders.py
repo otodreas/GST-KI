@@ -8,6 +8,7 @@ from otodreas_gst_ki import structs
 
 
 class GnomadDataset(BaseModel):
+    gnomadVersion: str
     gene: str
     ensemblId: str
     canonicalTranscript: str
@@ -45,7 +46,7 @@ def load_gnomad(
     filename: str | Path,
     ensembl_to_gene_lookup: dict[str, str] = structs.ensembl_to_gene,
     gene_to_ensembl_lookup: dict[str, dict[str, str]] = structs.gene_to_ensembl,
-    gnomad_schema: dict[str, pl.Any] = structs.gnomad_schema,
+    gnomad_schema: dict[str, pl.Any] = structs.gnomad_v4_schema,
 ) -> GnomadDataset:
     """Load a gnomAD CSV. Check for provenance between fields derived from hand-written lookup tables
     Returns a GnomadDataset object
@@ -53,8 +54,15 @@ def load_gnomad(
 
     filename = _check_csv(filename)
 
+    filenameinfo = filename.stem.split("_")
+    gnomad_version = filenameinfo[1]
+    if not gnomad_version.startswith("v4."):
+        warnings.warn(
+            "gnomAD version < 4 detected. Matrix will be matched to gnomAD v4 schema"
+        )
+
     # Extract short ensembl id
-    ensembl_id_short = filename.stem.split("_")[2]
+    ensembl_id_short = filenameinfo[2]
 
     if ensembl_id_short == [filename.stem]:
         raise TypeError(f"Failed to extract Ensembl ID from filename {filename}")
@@ -81,7 +89,17 @@ def load_gnomad(
             f"Provenance failure for {gene}: {ensembl_id_short} not like {ensembl_id_long}"
         )
 
-    df = pl.read_csv(filename, schema_overrides=gnomad_schema)
+    # Currently, all data must follow v4 schema
+    if gnomad_version.startswith("v4."):
+        df = pl.read_csv(filename, schema_overrides=gnomad_schema)
+    else:
+        df = pl.read_csv(
+            filename, schema_overrides={"ClinVar Variation ID": pl.String}
+        )  # always force clinvar variant id
+        df = df.match_to_schema(
+            gnomad_schema, missing_columns="insert", extra_columns="ignore"
+        )
+
     df = df.with_columns(Gene=pl.lit(gene, dtype=pl.String))
 
     if df.get_column("Chromosome").n_unique() > 1:
@@ -94,6 +112,7 @@ def load_gnomad(
     n_vars_in_canonical_transcript = df.get_column("CanonicalTranscript").sum()
 
     return GnomadDataset(
+        gnomadVersion=gnomad_version,
         gene=gene,
         ensemblId=ensembl_id_long,
         canonicalTranscript=canonical_transcript,

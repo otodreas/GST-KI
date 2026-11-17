@@ -104,3 +104,11 @@ class TestGnomad:
                 "tests/data/gnomad/gnomAD_v4.1.2_ENSG00000133432_2026_11_12_16_00_24_short_provenance_mismatch.csv",
                 ensembl_to_gene_lookup=bad_table,
             )
+
+    def test_gnomad_version_extraction(self):
+        assert (
+            loaders.load_gnomad(
+                "tests/data/gnomad/gnomAD_v4.1.2_ENSG00000133433_2026_11_12_16_00_24_short.csv"
+            ).gnomadVersion
+            == "v4.1.2"
+        )

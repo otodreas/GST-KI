@@ -1,6 +1,6 @@
 import polars as pl
 
-gnomad_schema = {
+gnomad_v4_schema = {
     "gnomAD ID": pl.String,
     "Chromosome": pl.Int64,
     "Position": pl.Int64,
@@ -141,6 +141,10 @@ gene_to_ensembl = {
         "geneId": "ENSG00000100577.19",
         "canonicalTranscript": "ENST00000216465.10",
     },
+    "GSTT1": {
+        "geneId": "ENSG00000184674.8",
+        "canonicalTranscript": "ENST00000248935.5",
+    },
 }
 
 # Reverse lookup of gene names from short Ensembl gene IDs
@@ -161,4 +165,5 @@ ensembl_to_gene = {
     "ENSG00000084207": "GSTP1",
     "ENSG00000099984": "GSTT2",
     "ENSG00000100577": "GSTZ1",
+    "ENSG00000184674": "GSTT1",
 }

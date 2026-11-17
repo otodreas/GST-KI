@@ -86,7 +86,7 @@ class TestGnomad:
             "ENSG00000134202": "GSTM3",
             "ENSG00000134201": "GSTM5",
             "ENSG00000148834": "GSTO1",
-            "ENSG00000133432": "GSTT2B",
+            "ENSG00000133432": "GSTT2B",  # the ensembl id is incorrect here
             "ENSG00000243955": "GSTA1",
             "ENSG00000174156": "GSTA3",
             "ENSG00000170899": "GSTA4",

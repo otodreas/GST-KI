@@ -25,7 +25,7 @@ class GnomadDataset(BaseModel):
         )
 
 
-def _load_gnomady_csv(filename: str | Path) -> tuple[str, Path]:
+def _check_csv(filename: str | Path) -> Path:
     filename = Path(filename)
 
     if not filename.is_file():
@@ -38,12 +38,7 @@ def _load_gnomady_csv(filename: str | Path) -> tuple[str, Path]:
     if filename.suffix != ".csv" or "," not in head:
         raise TypeError(f"{filename} is not a CSV file")
 
-    ensembl_id_short = filename.stem.split("_")[2]
-
-    if ensembl_id_short == [filename.stem]:
-        raise TypeError(f"Failed to extract Ensembl ID from filename {filename}")
-
-    return (ensembl_id_short, filename)
+    return filename
 
 
 def load_gnomad(
@@ -53,7 +48,13 @@ def load_gnomad(
     gnomad_schema: dict[str, pl.Any] = structs.gnomad_schema,
 ) -> GnomadDataset:
 
-    ensembl_id_short, filename = _load_gnomady_csv(filename)
+    filename = _check_csv(filename)
+
+    # Extract short ensembl id
+    ensembl_id_short = filename.stem.split("_")[2]
+
+    if ensembl_id_short == [filename.stem]:
+        raise TypeError(f"Failed to extract Ensembl ID from filename {filename}")
 
     # Lookups
     try:
@@ -63,10 +64,13 @@ def load_gnomad(
 
     try:
         ensembl_id_long = gene_to_ensembl_lookup[gene]["geneId"]
+    except KeyError:
+        print(f"Gene {gene} not present in lookup table or missing geneID key")
+    try:
         canonical_transcript = gene_to_ensembl_lookup[gene]["canonicalTranscript"]
     except KeyError:
         print(
-            f"Gene {gene} not present in lookup table or missing geneID and canonicalTranscript keys"
+            f"Gene {gene} not present in lookup table or missing canonicalTranscript key"
         )
 
     if ensembl_id_short != ensembl_id_long.split(".")[0]:

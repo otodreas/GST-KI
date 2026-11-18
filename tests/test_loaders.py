@@ -113,4 +113,8 @@ class TestGnomad:
             == "v4.1.2"
         )
 
-    # TODO: MAKE test for todo in loaders def test_alert_missing_introns(self):
+    def test_multiple_intron_veps(self):
+        with pytest.warns(UserWarning):  # case insensitive
+            loaders.load_gnomad(
+                "tests/data/gnomad/gnomAD_v4.1.2_ENSG00000133433_2026_11_12_16_00_24_short_multiple_vep_intron.csv"
+            )

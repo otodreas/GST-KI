@@ -108,7 +108,10 @@ def load_gnomad(
         .alias("Exonic")
     )
 
-    # TODO: check for missed vep annotation values containing "intron" if df.select(["VEP Annotation", "Exonic"])
+    vep_anns = df.filter(pl.col("Exonic")).get_column("VEP Annotation")
+    subset = vep_anns.filter(vep_anns.str.contains("(?i)intron"))
+    if not subset.is_empty():
+        warnings.warn(f"Multiple VEP Annotations containing 'intron' found: {subset}")
 
     if df.get_column("Chromosome").n_unique() > 1:
         warnings.warn(f"{filename} contains variants from multiple chromosomes")

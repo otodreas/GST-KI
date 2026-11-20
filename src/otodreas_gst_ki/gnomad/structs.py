@@ -21,6 +21,9 @@ class GnomadDataset(BaseModel):
     nVarsInCanonicalTranscript: int
     filePath: Path | None = None
     source: str | None = None
+    endpoint_queried: str | None = None
+    gnomad_dataset: str | None = None
+    reference_genome: str | None = None
     dataMatrix: pl.DataFrame
     exp_lof: float | None = None
     exp_mis: float | None = None

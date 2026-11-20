@@ -67,6 +67,9 @@ def test_fetch_gene_normalizes_graphql_results():
     assert dataset.obs_syn == 18
     assert dataset.oe_syn == 0.9
     assert dataset.constraint_flags == ["constraint_flag"]
+    assert dataset.endpoint_queried == "https://gnomad.broadinstitute.org/api"
+    assert dataset.gnomad_dataset == "gnomad_r4"
+    assert dataset.reference_genome == "GRCh38"
     assert isinstance(dataset.dataMatrix, pl.DataFrame)
 
 

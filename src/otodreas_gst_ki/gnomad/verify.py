@@ -133,9 +133,7 @@ def verify_database(
     try:
         genes = store.list_genes()
         for gene_row in genes.to_dicts():
-            table_name = gene_row["table_name"]
-            if not table_name or not table_name.startswith("gene_"):
-                continue
+            table_name = "variants"
 
             candidates = _candidate_csvs(
                 csv_root,
@@ -167,7 +165,8 @@ def verify_database(
                 shared_columns = [
                     column for column in shared_columns if column != "HGVS Consequence"
                 ]
-            checked_tables.append(table_name)
+            if table_name not in checked_tables:
+                checked_tables.append(table_name)
             checked_csvs.append(csv_path)
             if not shared_columns:
                 continue
@@ -223,7 +222,7 @@ def verify_database(
         compared_rows=compared_rows,
         compared_values=compared_values,
         disagreements=tuple(disagreements),
-        missing_csv_tables=tuple(missing_csv_tables),
+        missing_csv_tables=tuple(dict.fromkeys(missing_csv_tables)),
     )
 
 

@@ -230,6 +230,9 @@ class GnomadGraphQLClient:
             if data.height
             else 0,
             source=f"{GNOMAD_API_URL} ({dataset}, {reference_genome})",
+            endpoint_queried=GNOMAD_API_URL,
+            gnomad_dataset=dataset,
+            reference_genome=reference_genome,
             dataMatrix=data,
             exp_lof=constraint.get("exp_lof"),
             exp_mis=constraint.get("exp_mis"),

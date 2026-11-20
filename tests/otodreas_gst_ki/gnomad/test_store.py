@@ -6,7 +6,7 @@ import pytest
 from otodreas_gst_ki.gnomad import database as database_module
 from otodreas_gst_ki.gnomad import structs
 from otodreas_gst_ki.gnomad.database import build_database, rebuild_database
-from otodreas_gst_ki.gnomad.store import GnomadStore, gene_table_name, sv_table_name
+from otodreas_gst_ki.gnomad.store import GnomadStore
 from otodreas_gst_ki.gnomad.verify import verify_database
 
 
@@ -29,24 +29,14 @@ def _dataset(gene: str = "GSTT2B") -> structs.GnomadDataset:
         nVars=1,
         nVarsInCanonicalTranscript=1,
         source="test",
+        endpoint_queried="https://gnomad.example/api",
+        gnomad_dataset="gnomad_r4",
+        reference_genome="GRCh38",
         dataMatrix=frame,
     )
 
 
-def test_gene_table_name_uses_prefix():
-    assert gene_table_name("GSTT2B") == "gene_GSTT2B"
-
-
-def test_gene_table_name_rejects_identifiers():
-    with pytest.raises(ValueError):
-        gene_table_name("GST; DROP TABLE genes")
-
-
-def test_sv_table_name_uses_prefix():
-    assert sv_table_name("GSTT2B") == "sv_GSTT2B"
-
-
-def test_store_writes_metadata_and_gene_table():
+def test_store_writes_metadata_and_variants_table():
     store = GnomadStore()
     try:
         dataset = _dataset()
@@ -54,14 +44,22 @@ def test_store_writes_metadata_and_gene_table():
         dataset.oe_mis = 0.495
         dataset.obs_syn = 18
         dataset.oe_syn = 0.9
-        assert store.write_dataset(dataset) == "gene_GSTT2B"
+        assert store.write_dataset(dataset) == "variants"
         genes = store.list_genes()
         assert genes["gene_name"].to_list() == ["GSTT2B"]
         assert genes["obs_mis"].to_list() == [25]
         assert genes["oe_mis"].to_list() == [0.495]
         assert genes["obs_syn"].to_list() == [18]
         assert genes["oe_syn"].to_list() == [0.9]
-        assert store.read_gene("GSTT2B").shape == (1, 5)
+        assert store.read_gene("GSTT2B").shape == (1, 9)
+        variants = store.connection.sql("SELECT * FROM variants").pl()
+        assert variants.columns[-4:] == [
+            "fetched_at",
+            "endpoint_queried",
+            "gnomad_dataset",
+            "reference_genome",
+        ]
+        assert variants["endpoint_queried"].to_list() == ["https://gnomad.example/api"]
     finally:
         store.close()
 
@@ -77,6 +75,22 @@ def test_store_replaces_existing_gene_data():
         store.write_dataset(replacement)
         assert store.read_gene("GSTT2B").height == 2
         assert store.list_genes()["n_variants"].to_list() == [2]
+    finally:
+        store.close()
+
+
+def test_store_keeps_multiple_genes_in_one_variants_table():
+    store = GnomadStore()
+    try:
+        store.write_dataset(_dataset("GSTT2B"))
+        store.write_dataset(_dataset("GSTM5"))
+        cursor = store.connection.cursor()
+        try:
+            assert cursor.execute("SELECT COUNT(*) FROM variants").fetchone() == (2,)
+        finally:
+            cursor.close()
+        assert store.read_gene("GSTT2B").height == 1
+        assert store.read_gene("GSTM5").height == 1
     finally:
         store.close()
 
@@ -113,7 +127,7 @@ def test_verify_database_reports_only_shared_value_disagreements(tmp_path: Path)
 
     result = verify_database(database, csv_dir)
 
-    assert result.checked_tables == ("gene_GSTT2B",)
+    assert result.checked_tables == ("variants",)
     assert result.checked_csvs == (csv_path,)
     assert result.compared_rows == 2
     assert result.compared_values == 8
@@ -142,6 +156,15 @@ def test_rebuild_database_creates_snapshot_and_latest(tmp_path: Path):
     store = GnomadStore(latest)
     try:
         assert store.list_genes()["database_version"].to_list() == ["v4-test"]
+        table_names = {
+            row[0]
+            for row in store.connection.execute(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema = 'main'"
+            ).fetchall()
+        }
+        assert "variants" in table_names
+        assert not any(name.startswith(("gene_", "sv_")) for name in table_names)
     finally:
         store.close()
 

@@ -77,6 +77,21 @@ variants = store.read_gene("GSTT2B")
 store.close()
 ```
 
+The database contains one `genes` table and one `variants` table. Query all
+stored variants directly and filter by gene:
+
+```python
+import duckdb
+
+variants = duckdb.connect("data/gnomad/gnomad_latest.duckdb").sql(
+    "SELECT * FROM variants"
+).pl()
+gstt2b = variants.filter(variants["Gene"] == "GSTT2B")
+```
+
+Every variant row includes `fetched_at`, `endpoint_queried`,
+`gnomad_dataset`, and `reference_genome` provenance columns.
+
 To preserve a rebuildable database history, create a named snapshot and promote
 it to the latest database:
 
@@ -113,8 +128,7 @@ new snapshot. It is repointed only after the complete snapshot is written. A
 later rebuild leaves earlier snapshots available if gnomAD or the live API is
 unavailable.
 
-Each gene is stored in a variant table named `gene_<gene symbol>`, while the
-`genes` table stores gene-level metadata, gnomAD constraint values, and
-provenance. The default API dataset is gnomAD v4 on GRCh38; both can be
-overridden when fetching. Structural-variant data can use the reserved
-`sv_<gene symbol>` table naming convention.
+All variants are stored in the `variants` table, filtered by the `Gene`
+column; the `genes` table stores gene-level metadata and gnomAD constraint
+values. The default API dataset is gnomAD v4 on GRCh38; both can be overridden
+when fetching.

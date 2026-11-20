@@ -1,4 +1,3 @@
-import re
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -6,22 +5,6 @@ import duckdb
 import polars as pl
 
 from otodreas_gst_ki.gnomad import structs
-
-GENE_TABLE_PREFIX = "gene_"
-SV_TABLE_PREFIX = "sv_"
-_GENE_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
-
-
-def gene_table_name(gene: str) -> str:
-    if not _GENE_NAME.fullmatch(gene):
-        raise ValueError(f"Invalid gene name: {gene!r}")
-    return f"{GENE_TABLE_PREFIX}{gene}"
-
-
-def sv_table_name(gene: str) -> str:
-    if not _GENE_NAME.fullmatch(gene):
-        raise ValueError(f"Invalid gene name: {gene!r}")
-    return f"{SV_TABLE_PREFIX}{gene}"
 
 
 class GnomadStore:
@@ -52,7 +35,7 @@ class GnomadStore:
                 n_variants_in_canonical_transcript INTEGER NOT NULL,
                 source VARCHAR,
                 fetched_at TIMESTAMP NOT NULL,
-                table_name VARCHAR NOT NULL UNIQUE,
+                table_name VARCHAR,
                 database_version VARCHAR,
                 exp_lof DOUBLE,
                 exp_mis DOUBLE,
@@ -75,6 +58,13 @@ class GnomadStore:
                 syn_z DOUBLE,
                 pli DOUBLE,
                 constraint_flags VARCHAR[]
+            )
+            """
+        )
+        self.connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS variants (
+                "gnomAD ID" VARCHAR
             )
             """
         )
@@ -116,16 +106,51 @@ class GnomadStore:
                 )
 
     def write_dataset(self, dataset: structs.GnomadDataset) -> str:
-        table_name = gene_table_name(dataset.gene)
+        fetched_at = datetime.now(UTC).replace(tzinfo=None)
+        variant_frame = dataset.dataMatrix.with_columns(
+            pl.lit(fetched_at).cast(pl.Datetime("us")).alias("fetched_at"),
+            pl.lit(dataset.endpoint_queried).alias("endpoint_queried"),
+            pl.lit(dataset.gnomad_dataset).alias("gnomad_dataset"),
+            pl.lit(dataset.reference_genome).alias("reference_genome"),
+        )
+        if "Gene" not in variant_frame.columns:
+            variant_frame = variant_frame.with_columns(
+                pl.lit(dataset.gene).alias("Gene")
+            )
         self.connection.begin()
         try:
-            self.connection.register("_gene_frame", dataset.dataMatrix.to_arrow())
-            self.connection.execute(
-                f'CREATE OR REPLACE TABLE "{table_name}" AS SELECT * FROM "_gene_frame"'
-            )
+            existing_columns = {
+                row[0]
+                for row in self.connection.execute(
+                    "SELECT column_name FROM information_schema.columns "
+                    "WHERE table_name = 'variants'"
+                ).fetchall()
+            }
+            self.connection.register("_gene_frame", variant_frame.to_arrow())
+            if existing_columns == {"gnomAD ID"}:
+                self.connection.execute(
+                    'CREATE OR REPLACE TABLE variants AS SELECT * FROM "_gene_frame"'
+                )
+            else:
+                self.connection.execute(
+                    'DELETE FROM variants WHERE "Gene" = ?',
+                    [dataset.gene],
+                )
+                self.connection.execute(
+                    'INSERT INTO variants BY NAME SELECT * FROM "_gene_frame"'
+                )
             self.connection.execute(
                 """
-                INSERT INTO genes VALUES (
+                INSERT INTO genes (
+                    gene_name, ensembl_id, gnomad_version,
+                    canonical_transcript, chromosomes, n_variants,
+                    n_variants_in_canonical_transcript, source, fetched_at,
+                    table_name, database_version, exp_lof, exp_mis, exp_syn,
+                    obs_lof, obs_mis, obs_syn, oe_lof, oe_lof_lower,
+                    oe_lof_upper, oe_lof_percentile, oe_mis, oe_mis_lower,
+                    oe_mis_upper, oe_syn, oe_syn_lower, oe_syn_upper, lof_z,
+                    mis_z, syn_z, pli, constraint_flags
+                ) VALUES (
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?, ?, ?, ?
@@ -173,8 +198,8 @@ class GnomadStore:
                     dataset.nVars,
                     dataset.nVarsInCanonicalTranscript,
                     dataset.source,
-                    datetime.now(UTC).replace(tzinfo=None),
-                    table_name,
+                    fetched_at,
+                    dataset.gene,
                     self.database_version,
                     dataset.exp_lof,
                     dataset.exp_mis,
@@ -204,7 +229,7 @@ class GnomadStore:
         except Exception:
             self.connection.rollback()
             raise
-        return table_name
+        return "variants"
 
     def list_genes(self) -> pl.DataFrame:
         gene_list = pl.from_arrow(
@@ -216,17 +241,21 @@ class GnomadStore:
         return gene_list
 
     def read_gene(self, gene: str) -> pl.DataFrame:
-        table_name = gene_table_name(gene)
         cursor = self.connection.cursor()
-        exists = cursor.execute(
-            "SELECT 1 FROM information_schema.tables WHERE table_name = ?",
-            [table_name],
-        ).fetchone()
-        cursor.close()
+        try:
+            exists = cursor.execute(
+                "SELECT 1 FROM genes WHERE gene_name = ?",
+                [gene],
+            ).fetchone()
+        finally:
+            cursor.close()
         if not exists:
             raise KeyError(f"Gene not found: {gene}")
         gene_table = pl.from_arrow(
-            self.connection.sql(f'SELECT * FROM "{table_name}"').to_arrow_table()
+            self.connection.sql(
+                'SELECT * FROM variants WHERE "Gene" = ?',
+                params=[gene],
+            ).to_arrow_table()
         )
         if type(gene_table) is not pl.DataFrame:
             raise TypeError(f"Expected polars DataFrame, got {type(gene_table)}")

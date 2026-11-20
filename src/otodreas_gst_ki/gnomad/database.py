@@ -77,6 +77,21 @@ def rebuild_database(
                     f"expected genes {sorted(expected_genes)}, "
                     f"found {sorted(actual_genes)}"
                 )
+            table_names = {
+                row[0]
+                for row in verifier.connection.execute(
+                    "SELECT table_name FROM information_schema.tables "
+                    "WHERE table_schema = 'main'"
+                ).fetchall()
+            }
+            forbidden_tables = {
+                name for name in table_names if name.startswith(("gene_", "sv_"))
+            }
+            if "variants" not in table_names or forbidden_tables:
+                raise RuntimeError(
+                    "Database verification failed: expected exactly one "
+                    f"variants table, found {sorted(table_names)}"
+                )
             for dataset in datasets:
                 gene_rows = verifier.read_gene(dataset.gene)
                 if gene_rows.height != dataset.nVars:

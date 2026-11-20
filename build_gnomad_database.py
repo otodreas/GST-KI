@@ -43,6 +43,10 @@ gst_metadata = genes.filter(pl.col("gene_name") == "GSTT2B")
 print(gst_metadata)
 print(gst_variants.head())
 
+# Or query the single variants table directly, which is also Polars-friendly.
+all_variants = store.connection.sql("SELECT * FROM variants").pl()
+print(all_variants.filter(pl.col("Gene") == "GSTT2B").head())
+
 # Summarize canonical-transcript coverage for each stored gene.
 coverage = genes.select(
     "gene_name",
@@ -56,13 +60,8 @@ coverage = genes.select(
 )
 print(coverage)
 
-# Read all genes into a dictionary, matching the main notebook workflow.
-gene_frames = {
-    row["gene_name"]: store.read_gene(row["gene_name"]) for row in genes.to_dicts()
-}
-
-# Concatenate all gene variant tables for cross-gene analysis.
-full_data = pl.concat(gene_frames.values(), how="diagonal")
+# Use the single variant table for cross-gene analysis.
+full_data = all_variants
 print(full_data.head())
 
 # Find variant IDs shared by more than one gene.

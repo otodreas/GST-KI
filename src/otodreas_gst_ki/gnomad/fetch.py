@@ -85,13 +85,26 @@ class GnomadGraphQLClient:
             self._client = None
 
     def _execute_query(
-        self, document: Any, variables: dict[str, Any]
+        self,
+        document: Any,
+        variables: dict[str, Any],
+        *,
+        database: str | None = None,
     ) -> dict[str, Any]:
-        if self._execute is not None:
-            return self._execute(document, variable_values=variables)
-        assert self._client is not None
-        with self._client as client:
-            return client.execute(document, variable_values=variables)
+        try:
+            if self._execute is not None:
+                return self._execute(document, variable_values=variables)
+            assert self._client is not None
+            with self._client as client:
+                return client.execute(document, variable_values=variables)
+        except TransportQueryError as error:
+            if "gene not found" in str(error).lower() and "geneId" in variables:
+                raise ValueError(
+                    f"Gene {variables['geneId']} not found in database "
+                    f"{database or 'unknown'} on reference genome "
+                    f"{variables.get('referenceGenome', 'unknown')}"
+                ) from error
+            raise
 
     def _fetch_region_variants(
         self,
@@ -157,6 +170,7 @@ class GnomadGraphQLClient:
                 "geneId": gene_id.split(".")[0],
                 "referenceGenome": reference_genome,
             },
+            database=dataset,
         )
         gene = gene_result.get("gene")
         if gene is None:

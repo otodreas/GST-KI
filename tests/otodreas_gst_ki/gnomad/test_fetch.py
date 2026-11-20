@@ -110,3 +110,25 @@ def test_fetch_gene_splits_region_when_api_reports_too_many_variants():
     assert dataset.gene == "GSTM5"
     assert dataset.nVars == 2
     assert len(calls) == 3
+
+
+def test_fetch_gene_reports_database_and_reference_for_missing_gene():
+    def execute(_document, *, variable_values):
+        assert variable_values["geneId"] == "ENSG00000184674"
+        raise TransportQueryError("Gene not found")
+
+    client = GnomadGraphQLClient(execute=execute)
+
+    try:
+        client.fetch_gene(
+            "ENSG00000184674.8",
+            dataset="gnomad_r2_1",
+            reference_genome="GRCh37",
+        )
+    except ValueError as error:
+        assert str(error) == (
+            "Gene ENSG00000184674 not found in database gnomad_r2_1 "
+            "on reference genome GRCh37"
+        )
+    else:
+        raise AssertionError("Expected a useful missing-gene error")

@@ -29,10 +29,12 @@ class GnomadStore:
         self,
         database: str | Path = ":memory:",
         database_version: str | None = None,
+        read_only: bool = False,
     ):
         self.database_version = database_version
-        self.connection = duckdb.connect(str(database))
-        self._create_metadata_table()
+        self.connection = duckdb.connect(str(database), read_only=read_only)
+        if not read_only:
+            self._create_metadata_table()
 
     def close(self) -> None:
         self.connection.close()

@@ -108,9 +108,10 @@ build_database(configs, version="v4.1.2-2026-11-19")
 ```
 
 This writes `data/gnomad/snapshots/gnomad_v4.1.2-2026-11-19.duckdb` and
-`data/gnomad/gnomad_latest.duckdb`. The latest database is replaced only after
-the complete snapshot is written. A later rebuild leaves earlier snapshots
-available if gnomAD or the live API is unavailable.
+`data/gnomad/gnomad_latest.duckdb`. `gnomad_latest.duckdb` is a symlink to the
+new snapshot. It is repointed only after the complete snapshot is written. A
+later rebuild leaves earlier snapshots available if gnomAD or the live API is
+unavailable.
 
 Each gene is stored in a variant table named `gene_<gene symbol>`, while the
 `genes` table stores gene-level metadata, gnomAD constraint values, and

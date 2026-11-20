@@ -70,6 +70,7 @@ def rebuild_database(
         staging_snapshot.replace(snapshot_path)
 
         shutil.copy2(snapshot_path, staging_latest)
+        Path(f"{latest_path}.wal").unlink(missing_ok=True)
         staging_latest.replace(latest_path)
     finally:
         staging_snapshot.unlink(missing_ok=True)

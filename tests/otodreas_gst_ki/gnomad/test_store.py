@@ -98,6 +98,32 @@ def test_rebuild_database_creates_snapshot_and_latest(tmp_path: Path):
         store.close()
 
 
+def test_rebuild_database_removes_stale_latest_wal(tmp_path: Path):
+    snapshot, latest = rebuild_database(
+        [_dataset()],
+        version="v4-old",
+        database_dir=tmp_path,
+    )
+    assert snapshot.is_file()
+    assert latest.is_file()
+
+    latest_wal = tmp_path / "gnomad_latest.duckdb.wal"
+    latest_wal.write_bytes(b"stale wal")
+
+    rebuild_database(
+        [_dataset("GSTM5")],
+        version="v4-new",
+        database_dir=tmp_path,
+    )
+
+    assert not latest_wal.exists()
+    store = GnomadStore(latest)
+    try:
+        assert store.list_genes()["gene_name"].to_list() == ["GSTM5"]
+    finally:
+        store.close()
+
+
 def test_build_database_fetches_configured_genes(tmp_path: Path):
     configs = [
         structs.GnomadGeneConfig(

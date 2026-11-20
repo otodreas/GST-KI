@@ -90,6 +90,7 @@ def test_rebuild_database_creates_snapshot_and_latest(tmp_path: Path):
     assert latest == tmp_path / "gnomad_latest.duckdb"
     assert snapshot.is_file()
     assert latest.is_file()
+    assert snapshot.read_bytes() == latest.read_bytes()
 
     store = GnomadStore(latest)
     try:

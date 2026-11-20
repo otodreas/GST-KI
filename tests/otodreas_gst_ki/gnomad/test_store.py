@@ -7,6 +7,7 @@ from otodreas_gst_ki.gnomad import database as database_module
 from otodreas_gst_ki.gnomad import structs
 from otodreas_gst_ki.gnomad.database import build_database, rebuild_database
 from otodreas_gst_ki.gnomad.store import GnomadStore, gene_table_name, sv_table_name
+from otodreas_gst_ki.gnomad.verify import verify_database
 
 
 def _dataset(gene: str = "GSTT2B") -> structs.GnomadDataset:
@@ -78,6 +79,50 @@ def test_store_replaces_existing_gene_data():
         assert store.list_genes()["n_variants"].to_list() == [2]
     finally:
         store.close()
+
+
+def test_verify_database_reports_only_shared_value_disagreements(tmp_path: Path):
+    csv_dir = tmp_path / "gnomad"
+    csv_dir.mkdir()
+    csv_path = csv_dir / "gnomAD_v4.1.2_ENSG00000133433_2026_11_20.csv"
+    csv_path.write_text(
+        "gnomAD ID,Chromosome,Position,Reference,Alternate,Extra\n"
+        "22-1-A-G,22,1,A,G,csv-only\n"
+        "22-2-A-C,22,999,A,C,csv-only\n",
+    )
+
+    dataset = _dataset()
+    dataset.gnomadVersion = "gnomad_r4"
+    dataset.dataMatrix = pl.DataFrame(
+        {
+            "gnomAD ID": ["22-1-A-G", "22-2-A-C", "22-3-A-T"],
+            "Chromosome": [22, 22, 22],
+            "Position": [1, 2, 3],
+            "Reference": ["A", "A", "A"],
+            "Alternate": ["G", "C", "T"],
+        }
+    )
+    dataset.nVars = 3
+
+    database = tmp_path / "gnomad.duckdb"
+    store = GnomadStore(database)
+    try:
+        store.write_dataset(dataset)
+    finally:
+        store.close()
+
+    result = verify_database(database, csv_dir)
+
+    assert result.checked_tables == ("gene_GSTT2B",)
+    assert result.checked_csvs == (csv_path,)
+    assert result.compared_rows == 2
+    assert result.compared_values == 8
+    assert len(result.disagreements) == 1
+    disagreement = result.disagreements[0]
+    assert disagreement.gnomad_id == "22-2-A-C"
+    assert disagreement.column == "Position"
+    assert disagreement.table_value == 2
+    assert disagreement.csv_value == 999
 
 
 def test_rebuild_database_creates_snapshot_and_latest(tmp_path: Path):

@@ -8,6 +8,7 @@ import polars as pl
 from otodreas_gst_ki.gnomad import structs
 
 GENE_TABLE_PREFIX = "gene_"
+SV_TABLE_PREFIX = "sv_"
 _GENE_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
 
 
@@ -15,6 +16,12 @@ def gene_table_name(gene: str) -> str:
     if not _GENE_NAME.fullmatch(gene):
         raise ValueError(f"Invalid gene name: {gene!r}")
     return f"{GENE_TABLE_PREFIX}{gene}"
+
+
+def sv_table_name(gene: str) -> str:
+    if not _GENE_NAME.fullmatch(gene):
+        raise ValueError(f"Invalid gene name: {gene!r}")
+    return f"{SV_TABLE_PREFIX}{gene}"
 
 
 class GnomadStore:
@@ -44,21 +51,67 @@ class GnomadStore:
                 source VARCHAR,
                 fetched_at TIMESTAMP NOT NULL,
                 table_name VARCHAR NOT NULL UNIQUE,
-                database_version VARCHAR
+                database_version VARCHAR,
+                exp_lof DOUBLE,
+                exp_mis DOUBLE,
+                exp_syn DOUBLE,
+                obs_lof INTEGER,
+                obs_mis INTEGER,
+                obs_syn INTEGER,
+                oe_lof DOUBLE,
+                oe_lof_lower DOUBLE,
+                oe_lof_upper DOUBLE,
+                oe_lof_percentile INTEGER,
+                oe_mis DOUBLE,
+                oe_mis_lower DOUBLE,
+                oe_mis_upper DOUBLE,
+                oe_syn DOUBLE,
+                oe_syn_lower DOUBLE,
+                oe_syn_upper DOUBLE,
+                lof_z DOUBLE,
+                mis_z DOUBLE,
+                syn_z DOUBLE,
+                pli DOUBLE,
+                constraint_flags VARCHAR[]
             )
             """
         )
-        columns = {
+        existing_columns = {
             row[0]
             for row in self.connection.execute(
                 "SELECT column_name FROM information_schema.columns "
                 "WHERE table_name = 'genes'"
             ).fetchall()
         }
-        if "database_version" not in columns:
-            self.connection.execute(
-                "ALTER TABLE genes ADD COLUMN database_version VARCHAR"
-            )
+        constraint_columns = {
+            "database_version": "VARCHAR",
+            "exp_lof": "DOUBLE",
+            "exp_mis": "DOUBLE",
+            "exp_syn": "DOUBLE",
+            "obs_lof": "INTEGER",
+            "obs_mis": "INTEGER",
+            "obs_syn": "INTEGER",
+            "oe_lof": "DOUBLE",
+            "oe_lof_lower": "DOUBLE",
+            "oe_lof_upper": "DOUBLE",
+            "oe_lof_percentile": "INTEGER",
+            "oe_mis": "DOUBLE",
+            "oe_mis_lower": "DOUBLE",
+            "oe_mis_upper": "DOUBLE",
+            "oe_syn": "DOUBLE",
+            "oe_syn_lower": "DOUBLE",
+            "oe_syn_upper": "DOUBLE",
+            "lof_z": "DOUBLE",
+            "mis_z": "DOUBLE",
+            "syn_z": "DOUBLE",
+            "pli": "DOUBLE",
+            "constraint_flags": "VARCHAR[]",
+        }
+        for column_name, column_type in constraint_columns.items():
+            if column_name not in existing_columns:
+                self.connection.execute(
+                    f"ALTER TABLE genes ADD COLUMN {column_name} {column_type}"
+                )
 
     def write_dataset(self, dataset: structs.GnomadDataset) -> str:
         table_name = gene_table_name(dataset.gene)
@@ -70,7 +123,11 @@ class GnomadStore:
             )
             self.connection.execute(
                 """
-                INSERT INTO genes VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO genes VALUES (
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?, ?
+                )
                 ON CONFLICT (gene_name) DO UPDATE SET
                     ensembl_id = excluded.ensembl_id,
                     gnomad_version = excluded.gnomad_version,
@@ -82,7 +139,28 @@ class GnomadStore:
                     source = excluded.source,
                     fetched_at = excluded.fetched_at,
                     table_name = excluded.table_name,
-                    database_version = excluded.database_version
+                    database_version = excluded.database_version,
+                    exp_lof = excluded.exp_lof,
+                    exp_mis = excluded.exp_mis,
+                    exp_syn = excluded.exp_syn,
+                    obs_lof = excluded.obs_lof,
+                    obs_mis = excluded.obs_mis,
+                    obs_syn = excluded.obs_syn,
+                    oe_lof = excluded.oe_lof,
+                    oe_lof_lower = excluded.oe_lof_lower,
+                    oe_lof_upper = excluded.oe_lof_upper,
+                    oe_lof_percentile = excluded.oe_lof_percentile,
+                    oe_mis = excluded.oe_mis,
+                    oe_mis_lower = excluded.oe_mis_lower,
+                    oe_mis_upper = excluded.oe_mis_upper,
+                    oe_syn = excluded.oe_syn,
+                    oe_syn_lower = excluded.oe_syn_lower,
+                    oe_syn_upper = excluded.oe_syn_upper,
+                    lof_z = excluded.lof_z,
+                    mis_z = excluded.mis_z,
+                    syn_z = excluded.syn_z,
+                    pli = excluded.pli,
+                    constraint_flags = excluded.constraint_flags
                 """,
                 [
                     dataset.gene,
@@ -96,6 +174,27 @@ class GnomadStore:
                     datetime.now(UTC).replace(tzinfo=None),
                     table_name,
                     self.database_version,
+                    dataset.exp_lof,
+                    dataset.exp_mis,
+                    dataset.exp_syn,
+                    dataset.obs_lof,
+                    dataset.obs_mis,
+                    dataset.obs_syn,
+                    dataset.oe_lof,
+                    dataset.oe_lof_lower,
+                    dataset.oe_lof_upper,
+                    dataset.oe_lof_percentile,
+                    dataset.oe_mis,
+                    dataset.oe_mis_lower,
+                    dataset.oe_mis_upper,
+                    dataset.oe_syn,
+                    dataset.oe_syn_lower,
+                    dataset.oe_syn_upper,
+                    dataset.lof_z,
+                    dataset.mis_z,
+                    dataset.syn_z,
+                    dataset.pli,
+                    dataset.constraint_flags,
                 ],
             )
             self.connection.unregister("_gene_frame")

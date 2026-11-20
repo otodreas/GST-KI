@@ -22,6 +22,27 @@ class GnomadDataset(BaseModel):
     filePath: Path | None = None
     source: str | None = None
     dataMatrix: pl.DataFrame
+    exp_lof: float | None = None
+    exp_mis: float | None = None
+    exp_syn: float | None = None
+    obs_lof: int | None = None
+    obs_mis: int | None = None
+    obs_syn: int | None = None
+    oe_lof: float | None = None
+    oe_lof_lower: float | None = None
+    oe_lof_upper: float | None = None
+    oe_lof_percentile: int | None = None
+    oe_mis: float | None = None
+    oe_mis_lower: float | None = None
+    oe_mis_upper: float | None = None
+    oe_syn: float | None = None
+    oe_syn_lower: float | None = None
+    oe_syn_upper: float | None = None
+    lof_z: float | None = None
+    mis_z: float | None = None
+    syn_z: float | None = None
+    pli: float | None = None
+    constraint_flags: list[str] | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 

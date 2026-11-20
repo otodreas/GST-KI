@@ -24,6 +24,29 @@ GENE_REGION_QUERY = gql(
             start
             stop
             canonical_transcript_id
+            gnomad_constraint {
+                exp_lof
+                exp_mis
+                exp_syn
+                obs_lof
+                obs_mis
+                obs_syn
+                oe_lof
+                oe_lof_lower
+                oe_lof_upper
+                oe_lof_percentile
+                oe_mis
+                oe_mis_lower
+                oe_mis_upper
+                oe_syn
+                oe_syn_lower
+                oe_syn_upper
+                lof_z
+                mis_z
+                syn_z
+                pli
+                flags
+            }
         }
     }
     """
@@ -191,6 +214,7 @@ class GnomadGraphQLClient:
             dataset=dataset,
         )
         data = _variants_to_frame(variants, gene_name, canonical_transcript)
+        constraint = gene.get("gnomad_constraint") or {}
         return structs.GnomadDataset(
             gnomadVersion=gnomad_version,
             gene=gene_name,
@@ -207,6 +231,27 @@ class GnomadGraphQLClient:
             else 0,
             source=f"{GNOMAD_API_URL} ({dataset}, {reference_genome})",
             dataMatrix=data,
+            exp_lof=constraint.get("exp_lof"),
+            exp_mis=constraint.get("exp_mis"),
+            exp_syn=constraint.get("exp_syn"),
+            obs_lof=constraint.get("obs_lof"),
+            obs_mis=constraint.get("obs_mis"),
+            obs_syn=constraint.get("obs_syn"),
+            oe_lof=constraint.get("oe_lof"),
+            oe_lof_lower=constraint.get("oe_lof_lower"),
+            oe_lof_upper=constraint.get("oe_lof_upper"),
+            oe_lof_percentile=constraint.get("oe_lof_percentile"),
+            oe_mis=constraint.get("oe_mis"),
+            oe_mis_lower=constraint.get("oe_mis_lower"),
+            oe_mis_upper=constraint.get("oe_mis_upper"),
+            oe_syn=constraint.get("oe_syn"),
+            oe_syn_lower=constraint.get("oe_syn_lower"),
+            oe_syn_upper=constraint.get("oe_syn_upper"),
+            lof_z=constraint.get("lof_z"),
+            mis_z=constraint.get("mis_z"),
+            syn_z=constraint.get("syn_z"),
+            pli=constraint.get("pli"),
+            constraint_flags=constraint.get("flags"),
         )
 
 

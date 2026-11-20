@@ -5,7 +5,7 @@ import pytest
 
 from otodreas_gst_ki.gnomad import structs
 from otodreas_gst_ki.gnomad.database import build_database, rebuild_database
-from otodreas_gst_ki.gnomad.store import GnomadStore, gene_table_name
+from otodreas_gst_ki.gnomad.store import GnomadStore, gene_table_name, sv_table_name
 
 
 def _dataset(gene: str = "GSTT2B") -> structs.GnomadDataset:
@@ -40,11 +40,25 @@ def test_gene_table_name_rejects_identifiers():
         gene_table_name("GST; DROP TABLE genes")
 
 
+def test_sv_table_name_uses_prefix():
+    assert sv_table_name("GSTT2B") == "sv_GSTT2B"
+
+
 def test_store_writes_metadata_and_gene_table():
     store = GnomadStore()
     try:
-        assert store.write_dataset(_dataset()) == "gene_GSTT2B"
-        assert store.list_genes()["gene_name"].to_list() == ["GSTT2B"]
+        dataset = _dataset()
+        dataset.obs_mis = 25
+        dataset.oe_mis = 0.495
+        dataset.obs_syn = 18
+        dataset.oe_syn = 0.9
+        assert store.write_dataset(dataset) == "gene_GSTT2B"
+        genes = store.list_genes()
+        assert genes["gene_name"].to_list() == ["GSTT2B"]
+        assert genes["obs_mis"].to_list() == [25]
+        assert genes["oe_mis"].to_list() == [0.495]
+        assert genes["obs_syn"].to_list() == [18]
+        assert genes["oe_syn"].to_list() == [0.9]
         assert store.read_gene("GSTT2B").shape == (1, 5)
     finally:
         store.close()

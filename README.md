@@ -112,6 +112,8 @@ This writes `data/gnomad/snapshots/gnomad_v4.1.2-2026-11-19.duckdb` and
 the complete snapshot is written. A later rebuild leaves earlier snapshots
 available if gnomAD or the live API is unavailable.
 
-Each gene is stored in a table named `gene_<gene symbol>`, while the `genes`
-table stores gene metadata and provenance. The default API dataset is gnomAD
-v4 on GRCh38; both can be overridden when fetching.
+Each gene is stored in a variant table named `gene_<gene symbol>`, while the
+`genes` table stores gene-level metadata, gnomAD constraint values, and
+provenance. The default API dataset is gnomAD v4 on GRCh38; both can be
+overridden when fetching. Structural-variant data can use the reserved
+`sv_<gene symbol>` table naming convention.

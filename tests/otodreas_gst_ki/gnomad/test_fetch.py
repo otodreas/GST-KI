@@ -15,6 +15,15 @@ def test_fetch_gene_normalizes_graphql_results():
                 "start": 1,
                 "stop": 2,
                 "canonical_transcript_id": "ENST00000290765.9",
+                "gnomad_constraint": {
+                    "exp_mis": 50.5,
+                    "obs_mis": 25,
+                    "oe_mis": 0.495,
+                    "exp_syn": 20.0,
+                    "obs_syn": 18,
+                    "oe_syn": 0.9,
+                    "flags": ["constraint_flag"],
+                },
             }
         },
         {
@@ -53,6 +62,11 @@ def test_fetch_gene_normalizes_graphql_results():
     assert dataset.dataMatrix.select("CanonicalTranscript").to_series().to_list() == [
         True
     ]
+    assert dataset.obs_mis == 25
+    assert dataset.oe_mis == 0.495
+    assert dataset.obs_syn == 18
+    assert dataset.oe_syn == 0.9
+    assert dataset.constraint_flags == ["constraint_flag"]
     assert isinstance(dataset.dataMatrix, pl.DataFrame)
 
 

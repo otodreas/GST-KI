@@ -12,6 +12,7 @@ wheels/
 # Jupyter checkpoints
 .ipynb_checkpoints/
 
-# Reproducible data products
-*.duckdb
-*.duckdb.wal
+# DuckDB
+*.duckdb*
+*.wal
+*.tmp/

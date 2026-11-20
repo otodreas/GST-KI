@@ -1,4 +1,32 @@
+from pathlib import Path
+
 import polars as pl
+from pydantic import BaseModel, ConfigDict
+
+
+class GnomadDataset(BaseModel):
+    gnomadVersion: str
+    gene: str
+    ensemblId: str
+    canonicalTranscript: str
+    chromosomes: list[int]
+    nVars: int
+    nVarsInCanonicalTranscript: int
+    filePath: Path | None = None
+    source: str | None = None
+    dataMatrix: pl.DataFrame
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    def summarize(self):
+        percentage = (
+            self.nVarsInCanonicalTranscript / self.nVars * 100 if self.nVars else 0
+        )
+        print(
+            f"{self.gene}: {self.nVarsInCanonicalTranscript} variants are in the "
+            f"canonical transcript {self.canonicalTranscript} ({percentage:.1f}%)"
+        )
+
 
 gnomad_v4_schema = {
     "gnomAD ID": pl.String,

@@ -11,3 +11,8 @@ wheels/
 
 # Jupyter checkpoints
 .ipynb_checkpoints/
+
+# DuckDB
+*.duckdb*
+*.wal
+*.tmp/

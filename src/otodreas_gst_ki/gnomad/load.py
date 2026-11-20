@@ -2,28 +2,8 @@ import warnings
 from pathlib import Path
 
 import polars as pl
-from pydantic import BaseModel, ConfigDict
 
 from otodreas_gst_ki.gnomad import structs
-
-
-class GnomadDataset(BaseModel):
-    gnomadVersion: str
-    gene: str
-    ensemblId: str
-    canonicalTranscript: str
-    chromosomes: list[int]
-    nVars: int
-    nVarsInCanonicalTranscript: int
-    filePath: Path
-    dataMatrix: pl.DataFrame
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    def summarize(self):
-        print(
-            f"{self.gene}: {self.nVarsInCanonicalTranscript} variants are in the canonical transcript {self.canonicalTranscript} ({round(self.nVarsInCanonicalTranscript / self.nVars * 100, 1)}%)"
-        )
 
 
 def _check_csv(filename: str | Path) -> Path:
@@ -47,7 +27,7 @@ def load_gnomad(
     ensembl_to_gene_lookup: dict[str, str] = structs.ensembl_to_gene,
     gene_to_ensembl_lookup: dict[str, dict[str, str]] = structs.gene_to_ensembl,
     gnomad_schema: dict[str, pl.Any] = structs.gnomad_v4_schema,
-) -> GnomadDataset:
+) -> structs.GnomadDataset:
     """Load a gnomAD CSV. Check for provenance between fields derived from hand-written lookup tables
     Returns a GnomadDataset object
     """
@@ -122,7 +102,7 @@ def load_gnomad(
     )
     n_vars_in_canonical_transcript = df.get_column("CanonicalTranscript").sum()
 
-    return GnomadDataset(
+    return structs.GnomadDataset(
         gnomadVersion=gnomad_version,
         gene=gene,
         ensemblId=ensembl_id_long,
@@ -135,7 +115,7 @@ def load_gnomad(
     )
 
 
-def concat_gnomad(datasets: list[GnomadDataset]) -> pl.DataFrame:
+def concat_gnomad(datasets: list[structs.GnomadDataset]) -> pl.DataFrame:
 
     if len(datasets) < 2:
         raise ValueError("Pass a list of at least 2 datasets to concatenate")
@@ -143,7 +123,7 @@ def concat_gnomad(datasets: list[GnomadDataset]) -> pl.DataFrame:
     return pl.concat([d.dataMatrix for d in datasets])
 
 
-def find_shared_variants(datasets: list[GnomadDataset]) -> pl.DataFrame:
+def find_shared_variants(datasets: list[structs.GnomadDataset]) -> pl.DataFrame:
 
     combined = concat_gnomad(datasets).with_columns(
         VariantId=pl.concat_str(

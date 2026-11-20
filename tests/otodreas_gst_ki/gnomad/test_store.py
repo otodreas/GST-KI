@@ -3,6 +3,7 @@ from pathlib import Path
 import polars as pl
 import pytest
 
+from otodreas_gst_ki.gnomad import database as database_module
 from otodreas_gst_ki.gnomad import structs
 from otodreas_gst_ki.gnomad.database import build_database, rebuild_database
 from otodreas_gst_ki.gnomad.store import GnomadStore, gene_table_name, sv_table_name
@@ -98,6 +99,52 @@ def test_rebuild_database_creates_snapshot_and_latest(tmp_path: Path):
         assert store.list_genes()["database_version"].to_list() == ["v4-test"]
     finally:
         store.close()
+
+
+def test_failed_verification_preserves_latest_and_wal(tmp_path: Path, monkeypatch):
+    latest = tmp_path / "gnomad_latest.duckdb"
+    latest.write_bytes(b"existing latest")
+    latest_wal = tmp_path / "gnomad_latest.duckdb.wal"
+    latest_wal.write_bytes(b"existing wal")
+
+    real_store = GnomadStore
+
+    class UnverifiedStore:
+        def __init__(
+            self,
+            database=":memory:",
+            database_version=None,
+            read_only=False,
+        ):
+            self.store = real_store(database, database_version, read_only)
+            self.read_only = read_only
+
+        def close(self):
+            self.store.close()
+
+        def write_dataset(self, dataset):
+            return self.store.write_dataset(dataset)
+
+        def list_genes(self):
+            if self.read_only:
+                return pl.DataFrame({"gene_name": ["WRONG"]})
+            return self.store.list_genes()
+
+        def read_gene(self, gene):
+            return self.store.read_gene(gene)
+
+    monkeypatch.setattr(database_module, "GnomadStore", UnverifiedStore)
+
+    with pytest.raises(RuntimeError, match="Database verification failed"):
+        rebuild_database(
+            [_dataset()],
+            version="v4-failed",
+            database_dir=tmp_path,
+        )
+
+    assert latest.read_bytes() == b"existing latest"
+    assert latest_wal.read_bytes() == b"existing wal"
+    assert not (tmp_path / "snapshots" / "gnomad_v4-failed.duckdb").exists()
 
 
 def test_rebuild_database_removes_stale_latest_wal(tmp_path: Path):

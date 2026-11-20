@@ -66,6 +66,28 @@ def rebuild_database(
         finally:
             store.close()
 
+        verifier = GnomadStore(str(staging_snapshot), read_only=True)
+        try:
+            gene_rows = verifier.list_genes()
+            actual_genes = set(gene_rows["gene_name"].to_list())
+            expected_genes = {dataset.gene for dataset in datasets}
+            if actual_genes != expected_genes:
+                raise RuntimeError(
+                    "Database verification failed: "
+                    f"expected genes {sorted(expected_genes)}, "
+                    f"found {sorted(actual_genes)}"
+                )
+            for dataset in datasets:
+                gene_rows = verifier.read_gene(dataset.gene)
+                if gene_rows.height != dataset.nVars:
+                    raise RuntimeError(
+                        "Database verification failed: "
+                        f"{dataset.gene} has {gene_rows.height} variants, "
+                        f"expected {dataset.nVars}"
+                    )
+        finally:
+            verifier.close()
+
         staging_snapshot.replace(snapshot_path)
 
         Path(f"{latest_path}.wal").unlink(missing_ok=True)

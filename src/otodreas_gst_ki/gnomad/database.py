@@ -2,9 +2,43 @@ import re
 import shutil
 import uuid
 from pathlib import Path
+from time import sleep
 
+from otodreas_gst_ki.gnomad.fetch import GnomadGraphQLClient
 from otodreas_gst_ki.gnomad.store import GnomadStore
-from otodreas_gst_ki.gnomad.structs import GnomadDataset
+from otodreas_gst_ki.gnomad.structs import GnomadDataset, GnomadGeneConfig
+
+
+def build_database(
+    gene_configs: list[GnomadGeneConfig],
+    version: str,
+    database_dir: str | Path = "data/gnomad",
+    latest_name: str = "gnomad_latest.duckdb",
+    client: GnomadGraphQLClient | None = None,
+    pause_seconds: float = 0,
+) -> tuple[Path, Path]:
+    """Fetch configured genes and rebuild the versioned DuckDB database."""
+    client = client or GnomadGraphQLClient()
+    datasets = []
+    for config in gene_configs:
+        datasets.append(
+            client.fetch_gene(
+                config.ensembl_id,
+                dataset=config.gnomad_database_version,
+                reference_genome=config.reference_genome,
+                gene_name=config.gene_name,
+                gnomad_version=config.gnomad_database_version,
+            )
+        )
+        if pause_seconds:
+            sleep(pause_seconds)
+
+    return rebuild_database(
+        datasets,
+        version=version,
+        database_dir=database_dir,
+        latest_name=latest_name,
+    )
 
 
 def rebuild_database(

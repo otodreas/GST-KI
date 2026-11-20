@@ -4,7 +4,7 @@ import polars as pl
 import pytest
 
 from otodreas_gst_ki.gnomad import structs
-from otodreas_gst_ki.gnomad.database import rebuild_database
+from otodreas_gst_ki.gnomad.database import build_database, rebuild_database
 from otodreas_gst_ki.gnomad.store import GnomadStore, gene_table_name
 
 
@@ -82,3 +82,58 @@ def test_rebuild_database_creates_snapshot_and_latest(tmp_path: Path):
         assert store.list_genes()["database_version"].to_list() == ["v4-test"]
     finally:
         store.close()
+
+
+def test_build_database_fetches_configured_genes(tmp_path: Path):
+    configs = [
+        structs.GnomadGeneConfig(
+            gene_name="GSTT1",
+            ensembl_id="ENSG00000184674.8",
+            gnomad_database_version="gnomad_r2_1",
+            reference_genome="GRCh37",
+        ),
+        structs.GnomadGeneConfig(
+            gene_name="GSTM5",
+            ensembl_id="ENSG00000134201.12",
+            gnomad_database_version="gnomad_r4",
+        ),
+    ]
+
+    class FakeClient:
+        def __init__(self):
+            self.calls = []
+
+        def fetch_gene(self, ensembl_id, **kwargs):
+            self.calls.append((ensembl_id, kwargs))
+            return _dataset(kwargs["gene_name"])
+
+    client = FakeClient()
+    snapshot, latest = build_database(
+        configs,
+        version="v-test",
+        database_dir=tmp_path,
+        client=client,
+    )
+
+    assert snapshot.is_file()
+    assert latest.is_file()
+    assert client.calls == [
+        (
+            "ENSG00000184674.8",
+            {
+                "dataset": "gnomad_r2_1",
+                "reference_genome": "GRCh37",
+                "gene_name": "GSTT1",
+                "gnomad_version": "gnomad_r2_1",
+            },
+        ),
+        (
+            "ENSG00000134201.12",
+            {
+                "dataset": "gnomad_r4",
+                "reference_genome": "GRCh38",
+                "gene_name": "GSTM5",
+                "gnomad_version": "gnomad_r4",
+            },
+        ),
+    ]

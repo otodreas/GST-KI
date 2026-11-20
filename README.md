@@ -89,6 +89,24 @@ snapshot, latest = rebuild_database(
 )
 ```
 
+For a complete rebuild, configure each gene and let the library fetch and store
+them in sequence:
+
+```python
+from otodreas_gst_ki.gnomad import structs
+from otodreas_gst_ki.gnomad.database import build_database
+
+configs = [
+    structs.GnomadGeneConfig(
+        gene_name="GSTT1",
+        ensembl_id="ENSG00000184674.8",
+        gnomad_database_version="gnomad_r2_1",
+        reference_genome="GRCh37",
+    ),
+]
+build_database(configs, version="v4.1.2-2026-11-19")
+```
+
 This writes `data/gnomad/snapshots/gnomad_v4.1.2-2026-11-19.duckdb` and
 `data/gnomad/gnomad_latest.duckdb`. The latest database is replaced only after
 the complete snapshot is written. A later rebuild leaves earlier snapshots

@@ -4,6 +4,13 @@ import polars as pl
 from pydantic import BaseModel, ConfigDict
 
 
+class GnomadGeneConfig(BaseModel):
+    gene_name: str
+    ensembl_id: str
+    gnomad_database_version: str
+    reference_genome: str = "GRCh38"
+
+
 class GnomadDataset(BaseModel):
     gnomadVersion: str
     gene: str
@@ -105,6 +112,10 @@ gnomad_v4_schema = {
 
 # Full Ensembl gene IDs and Ensembl canonical transcripts
 gene_to_ensembl = {
+    "GSTT1": {
+        "geneId": "ENSG00000184674.8",
+        "canonicalTranscript": "ENST00000248935.5",
+    },
     "GSTM1": {
         "geneId": "ENSG00000134184.13",
         "canonicalTranscript": "ENST00000309851.10",
@@ -169,14 +180,11 @@ gene_to_ensembl = {
         "geneId": "ENSG00000100577.19",
         "canonicalTranscript": "ENST00000216465.10",
     },
-    "GSTT1": {
-        "geneId": "ENSG00000184674.8",
-        "canonicalTranscript": "ENST00000248935.5",
-    },
 }
 
 # Reverse lookup of gene names from short Ensembl gene IDs
 ensembl_to_gene = {
+    "ENSG00000184674": "GSTT1",
     "ENSG00000134184": "GSTM1",
     "ENSG00000134202": "GSTM3",
     "ENSG00000134201": "GSTM5",
@@ -193,5 +201,4 @@ ensembl_to_gene = {
     "ENSG00000084207": "GSTP1",
     "ENSG00000099984": "GSTT2",
     "ENSG00000100577": "GSTZ1",
-    "ENSG00000184674": "GSTT1",
 }

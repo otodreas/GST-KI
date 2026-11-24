@@ -156,10 +156,10 @@ gene_to_ensembl = {
         "geneId": "ENSG00000148834.13",
         "canonicalTranscript": "ENST00000369713.10",
     },
-    "GSTT2B": {
-        "geneId": "ENSG00000133433.11",
-        "canonicalTranscript": "ENST00000290765.9",
-    },
+    # "GSTT2B": {
+    #     "geneId": "ENSG00000133433.11",
+    #     "canonicalTranscript": "ENST00000290765.9",
+    # },
     "GSTA1": {
         "geneId": "ENSG00000243955.6",
         "canonicalTranscript": "ENST00000334575.6",
@@ -213,7 +213,7 @@ ensembl_to_gene = {
     "ENSG00000134202": "GSTM3",
     "ENSG00000134201": "GSTM5",
     "ENSG00000148834": "GSTO1",
-    "ENSG00000133433": "GSTT2B",
+    # "ENSG00000133433": "GSTT2B",
     "ENSG00000243955": "GSTA1",
     "ENSG00000174156": "GSTA3",
     "ENSG00000170899": "GSTA4",

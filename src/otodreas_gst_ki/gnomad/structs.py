@@ -1,4 +1,63 @@
+from pathlib import Path
+
 import polars as pl
+from pydantic import BaseModel, ConfigDict
+
+
+class GnomadGeneConfig(BaseModel):
+    gene_name: str
+    ensembl_id: str
+    gnomad_database_version: str
+    reference_genome: str = "GRCh38"
+
+
+class GnomadDataset(BaseModel):
+    gnomadVersion: str
+    gene: str
+    ensemblId: str
+    canonicalTranscript: str
+    chromosomes: list[int]
+    nVars: int
+    nVarsInCanonicalTranscript: int
+    filePath: Path | None = None
+    source: str | None = None
+    endpoint_queried: str | None = None
+    gnomad_dataset: str | None = None
+    reference_genome: str | None = None
+    dataMatrix: pl.DataFrame
+    exp_lof: float | None = None
+    exp_mis: float | None = None
+    exp_syn: float | None = None
+    obs_lof: int | None = None
+    obs_mis: int | None = None
+    obs_syn: int | None = None
+    oe_lof: float | None = None
+    oe_lof_lower: float | None = None
+    oe_lof_upper: float | None = None
+    oe_lof_percentile: int | None = None
+    oe_mis: float | None = None
+    oe_mis_lower: float | None = None
+    oe_mis_upper: float | None = None
+    oe_syn: float | None = None
+    oe_syn_lower: float | None = None
+    oe_syn_upper: float | None = None
+    lof_z: float | None = None
+    mis_z: float | None = None
+    syn_z: float | None = None
+    pli: float | None = None
+    constraint_flags: list[str] | None = None
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    def summarize(self):
+        percentage = (
+            self.nVarsInCanonicalTranscript / self.nVars * 100 if self.nVars else 0
+        )
+        print(
+            f"{self.gene}: {self.nVarsInCanonicalTranscript} variants are in the "
+            f"canonical transcript {self.canonicalTranscript} ({percentage:.1f}%)"
+        )
+
 
 gnomad_v4_schema = {
     "gnomAD ID": pl.String,
@@ -77,6 +136,10 @@ gnomad_v4_schema = {
 
 # Full Ensembl gene IDs and Ensembl canonical transcripts
 gene_to_ensembl = {
+    "GSTT1": {
+        "geneId": "ENSG00000184674.8",
+        "canonicalTranscript": "ENST00000248935.5",
+    },
     "GSTM1": {
         "geneId": "ENSG00000134184.13",
         "canonicalTranscript": "ENST00000309851.10",
@@ -141,14 +204,11 @@ gene_to_ensembl = {
         "geneId": "ENSG00000100577.19",
         "canonicalTranscript": "ENST00000216465.10",
     },
-    "GSTT1": {
-        "geneId": "ENSG00000184674.8",
-        "canonicalTranscript": "ENST00000248935.5",
-    },
 }
 
 # Reverse lookup of gene names from short Ensembl gene IDs
 ensembl_to_gene = {
+    "ENSG00000184674": "GSTT1",
     "ENSG00000134184": "GSTM1",
     "ENSG00000134202": "GSTM3",
     "ENSG00000134201": "GSTM5",
@@ -165,5 +225,4 @@ ensembl_to_gene = {
     "ENSG00000084207": "GSTP1",
     "ENSG00000099984": "GSTT2",
     "ENSG00000100577": "GSTZ1",
-    "ENSG00000184674": "GSTT1",
 }

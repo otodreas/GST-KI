@@ -59,3 +59,76 @@ uv run pytest
 ```
 
 Add at least one test for every unit added.
+
+## gnomAD data storage
+
+The library can fetch a gene directly from the gnomAD GraphQL API and store it
+in DuckDB:
+
+```python
+from otodreas_gst_ki.gnomad.fetch import GnomadGraphQLClient
+from otodreas_gst_ki.gnomad.store import GnomadStore
+
+dataset = GnomadGraphQLClient().fetch_gene("ENSG00000133433.11")
+
+store = GnomadStore("data/gnomad.duckdb")
+store.write_dataset(dataset)
+variants = store.read_gene("GSTT2B")
+store.close()
+```
+
+The database contains one `genes` table and one `variants` table. Query all
+stored variants directly and filter by gene:
+
+```python
+import duckdb
+
+variants = duckdb.connect("data/gnomad/gnomad_latest.duckdb").sql(
+    "SELECT * FROM variants"
+).pl()
+gstt2b = variants.filter(variants["Gene"] == "GSTT2B")
+```
+
+Every variant row includes `fetched_at`, `endpoint_queried`,
+`gnomad_dataset`, and `reference_genome` provenance columns.
+
+To preserve a rebuildable database history, create a named snapshot and promote
+it to the latest database:
+
+```python
+from otodreas_gst_ki.gnomad.database import rebuild_database
+
+snapshot, latest = rebuild_database(
+    [dataset],
+    version="v4.1.2-2026-11-19",
+)
+```
+
+For a complete rebuild, configure each gene and let the library fetch and store
+them in sequence:
+
+```python
+from otodreas_gst_ki.gnomad import structs
+from otodreas_gst_ki.gnomad.database import build_database
+
+configs = [
+    structs.GnomadGeneConfig(
+        gene_name="GSTT1",
+        ensembl_id="ENSG00000184674.8",
+        gnomad_database_version="gnomad_r2_1",
+        reference_genome="GRCh37",
+    ),
+]
+build_database(configs, version="v4.1.2-2026-11-19")
+```
+
+This writes `data/gnomad/snapshots/gnomad_v4.1.2-2026-11-19.duckdb` and
+`data/gnomad/gnomad_latest.duckdb`. `gnomad_latest.duckdb` is a symlink to the
+new snapshot. It is repointed only after the complete snapshot is written. A
+later rebuild leaves earlier snapshots available if gnomAD or the live API is
+unavailable.
+
+All variants are stored in the `variants` table, filtered by the `Gene`
+column; the `genes` table stores gene-level metadata and gnomAD constraint
+values. The default API dataset is gnomAD v4 on GRCh38; both can be overridden
+when fetching.
